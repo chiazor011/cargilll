@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Lora", serif;
+  
+  --color-cargill-green-dark: #052b14; /* very dark green for hero background */
+  --color-cargill-green: #0a4f26; /* primary logo/header green */
+  --color-cargill-green-brand: #0f8b44; /* bright brand green for buttons */
+  --color-cargill-green-light: #e5eed9; /* light green for badges/highlights */
+  --color-cargill-beige: #f4f5ef; /* main background color */
+  --color-cargill-gray-dark: #1a1a1a;
+  --color-cargill-gray: #666666;
+}
+
+@layer base {
+  body {
+    @apply bg-cargill-beige text-cargill-gray-dark font-sans;
+  }
+}
+
+.cargill-hero-gradient {
+  background: linear-gradient(to right, rgba(5, 43, 20, 1) 0%, rgba(5, 43, 20, 0.8) 50%, rgba(5, 43, 20, 0.3) 100%);
+}

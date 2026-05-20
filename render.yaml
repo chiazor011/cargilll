@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: cargill-institutional
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_PATH
+        value: /opt/render/project/src/data/platform.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        value: AdminPass123!
+      - key: DEMO_PASSWORD
+        value: DemoPass123!
+      - key: GEMINI_API_KEY
+        sync: false
+    # NOTE: Free plan does not support disks, so the SQLite DB is ephemeral.
+    # Data will reset on every deploy and after spin-down. Upgrade to a paid
+    # plan and uncomment the disk block below to persist data.
+    # disk:
+    #   name: data
+    #   mountPath: /opt/render/project/src/data
+    #   sizeGB: 1
