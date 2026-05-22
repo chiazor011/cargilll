@@ -13,32 +13,32 @@ services:
       - key: DATABASE_PATH
         value: /opt/render/project/src/data/platform.db
       - key: JWT_SECRET
-        generateValue: true
+        value: cargill-jwt-secret-2026-render-deploy
       - key: ADMIN_PASSWORD
         value: AdminPass123!
       - key: DEMO_PASSWORD
         value: DemoPass123!
       - key: GEMINI_API_KEY
-        sync: false
-      # NEW: SMTP for transactional emails
+        value: ""
+      # SMTP for transactional emails
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
         value: "587"
       - key: SMTP_USER
-        sync: false
+        value: cargillinvestmentsstake@gmail.com
       - key: SMTP_PASS
-        sync: false
+        value: ndtrcflixwcguior
       - key: FROM_EMAIL
         value: cargillinvestmentsstake@gmail.com
-      # NEW: Ollama Cloud chatbot
+      # Ollama Cloud chatbot
       - key: OLLAMA_BASE_URL
         value: https://ollama.com
       - key: OLLAMA_API_KEY
-        sync: false
+        value: 1cfdec06eb3d4e62adc5a824493be9b3.BNDqR7oK4ILQeEXYfwrMkpLb
       - key: OLLAMA_MODEL
-        value: ministral-3:3b
-      # NEW: App URL for email links
+        value: gemma4:31b-cloud
+      # App URL for email links and CORS
       - key: APP_URL
         value: https://cargill-institutional.onrender.com
     # NOTE: Free plan does not support disks, so the SQLite DB is ephemeral.

@@ -8,7 +8,7 @@ const router = Router();
 // Set OLLAMA_BASE_URL to 'https://ollama.com' for Ollama Cloud
 // Set OLLAMA_API_KEY to your Ollama Cloud API key
 const OLLAMA_BASE = process.env.OLLAMA_BASE_URL || 'https://ollama.com';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'ministral-3:3b';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'gemma4:31b-cloud';
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || '';
 
 async function ollamaChat(messages: { role: string; content: string }[]) {
