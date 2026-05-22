@@ -80,8 +80,8 @@ Be concise, professional, and helpful. If unsure, direct the user to create a su
 
     res.json({ reply, sessionId: sid });
   } catch (e: any) {
-    console.error('[chatbot]', e);
-    res.status(500).json({ error: 'Chatbot service unavailable. Please try again later or create a support ticket.' });
+    console.error('[chatbot] ERROR:', e.message || e);
+    res.status(500).json({ error: e.message || 'Chatbot service unavailable. Please try again later or create a support ticket.' });
   }
 });
 
