@@ -5,6 +5,7 @@ import { adminMiddleware } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
 import { db, fromCents, toCents } from '../db.js';
 import { approveTransaction, rejectTransaction, formatTransaction } from '../services/transactionService.js';
+import { sendTransactionStatusEmail } from '../services/emailService.js';
 
 const router = Router();
 
@@ -16,13 +17,14 @@ router.get('/dashboard', (_req, res) => {
   const pendingDeposits = (db.prepare(`SELECT COUNT(*) as c FROM transactions WHERE status = 'Pending' AND type = 'deposit'`).get() as any).c;
   const pendingWithdrawals = (db.prepare(`SELECT COUNT(*) as c FROM transactions WHERE status = 'Pending' AND type = 'withdrawal'`).get() as any).c;
   const totalTransactions = (db.prepare(`SELECT COUNT(*) as c FROM transactions`).get() as any).c;
+  const openTickets = (db.prepare(`SELECT COUNT(*) as c FROM support_tickets WHERE status IN ('open', 'in_progress')`).get() as any).c;
 
   // Calculate total AUM from all holdings
   const totalHoldingsCents = (db.prepare(`SELECT SUM(current_cents) as s FROM holdings`).get() as any)?.s || 0;
   const totalCashCents = (db.prepare(`SELECT SUM(balance_cents) as s FROM users`).get() as any)?.s || 0;
   const totalAum = fromCents(totalHoldingsCents + totalCashCents);
 
-  res.json({ totalUsers, totalAum, pendingDeposits, pendingWithdrawals, totalTransactions });
+  res.json({ totalUsers, totalAum, pendingDeposits, pendingWithdrawals, totalTransactions, openTickets });
 });
 
 // GET /api/admin/users
@@ -81,6 +83,10 @@ const approveSchema = z.object({ adminNotes: z.string().optional() });
 router.post('/transactions/:id/approve', validate(approveSchema), (req, res) => {
   try {
     const tx = approveTransaction(Number(req.params.id), req.body.adminNotes);
+    const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(tx.user_id) as any;
+    if (user) {
+      sendTransactionStatusEmail(user.email, user.name, tx.type, tx.status, fromCents(tx.amount_cents), req.body.adminNotes).catch(console.error);
+    }
     res.json({ transaction: formatTransaction(tx) });
   } catch (e: any) {
     res.status(400).json({ error: e.message });
@@ -93,6 +99,10 @@ const rejectSchema = z.object({ adminNotes: z.string().optional() });
 router.post('/transactions/:id/reject', validate(rejectSchema), (req, res) => {
   try {
     const tx = rejectTransaction(Number(req.params.id), req.body.adminNotes);
+    const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(tx.user_id) as any;
+    if (user) {
+      sendTransactionStatusEmail(user.email, user.name, tx.type, tx.status, fromCents(tx.amount_cents), req.body.adminNotes).catch(console.error);
+    }
     res.json({ transaction: formatTransaction(tx) });
   } catch (e: any) {
     res.status(400).json({ error: e.message });
@@ -184,6 +194,30 @@ router.put('/settings', (req, res) => {
   if (bankDetails !== undefined) stmt.run('bank_details', JSON.stringify(bankDetails));
 
   res.json({ success: true });
+});
+
+// Support tickets admin endpoints
+router.get('/support-tickets', (_req, res) => {
+  const tickets = db.prepare(`
+    SELECT t.*, u.email, u.name
+    FROM support_tickets t
+    JOIN users u ON t.user_id = u.id
+    ORDER BY CASE t.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'resolved' THEN 2 ELSE 3 END, t.created_at DESC
+  `).all() as any[];
+  res.json({ tickets: tickets.map(t => ({ id: t.id, userId: t.user_id, userEmail: t.email, userName: t.name, subject: t.subject, message: t.message, status: t.status, adminReply: t.admin_reply, createdAt: t.created_at, updatedAt: t.updated_at })) });
+});
+
+const ticketReplySchema = z.object({
+  status: z.enum(['open', 'in_progress', 'resolved', 'closed']),
+  reply: z.string().optional(),
+});
+
+router.post('/support-tickets/:id/reply', validate(ticketReplySchema), (req, res) => {
+  const ticketId = Number(req.params.id);
+  const { status, reply } = req.body;
+  db.prepare(`UPDATE support_tickets SET status = ?, admin_reply = COALESCE(?, admin_reply), updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(status, reply || null, ticketId);
+  const ticket = db.prepare(`SELECT * FROM support_tickets WHERE id = ?`).get(ticketId) as any;
+  res.json({ ticket: { id: ticket.id, subject: ticket.subject, status: ticket.status, adminReply: ticket.admin_reply, updatedAt: ticket.updated_at } });
 });
 
 export default router;

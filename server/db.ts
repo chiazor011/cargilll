@@ -25,6 +25,10 @@ export function initSchema() {
       tier INTEGER NOT NULL DEFAULT 0 CHECK(tier IN (0, 1, 2, 3)),
       kyc_status TEXT NOT NULL DEFAULT 'none' CHECK(kyc_status IN ('none', 'pending', 'verified')),
       balance_cents INTEGER NOT NULL DEFAULT 0,
+      email_verified INTEGER NOT NULL DEFAULT 0,
+      email_verification_token TEXT,
+      password_reset_token TEXT,
+      password_reset_expires TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -93,11 +97,42 @@ export function initSchema() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS support_tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      subject TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','in_progress','resolved','closed')),
+      admin_reply TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS chat_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      session_id TEXT UNIQUE NOT NULL,
+      messages TEXT NOT NULL DEFAULT '[]',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_transactions_user_status ON transactions(user_id, status, type);
     CREATE INDEX IF NOT EXISTS idx_transactions_pending ON transactions(status, type) WHERE status = 'Pending';
     CREATE INDEX IF NOT EXISTS idx_holdings_user ON holdings(user_id);
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_support_tickets_user ON support_tickets(user_id);
+    CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets(status);
   `);
+
+  // Migration: add max_investment_cents to funds if missing
+  try {
+    db.prepare(`SELECT max_investment_cents FROM funds LIMIT 1`).get();
+  } catch {
+    db.prepare(`ALTER TABLE funds ADD COLUMN max_investment_cents INTEGER`).run();
+  }
 }
 
 // Money helpers: convert between cents (DB) and dollars (API)

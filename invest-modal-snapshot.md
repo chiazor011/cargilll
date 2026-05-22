@@ -1,0 +1,184 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e5]:
+      - generic [ref=e6]:
+        - img "Cargill" [ref=e8] [cursor=pointer]
+        - generic [ref=e9]:
+          - button "Markets" [ref=e10]
+          - button "Investments" [ref=e762]
+          - button "Sustainability" [ref=e12]
+        - generic [ref=e13]:
+          - button "Contact" [ref=e14]
+          - button "Sign In" [ref=e763]:
+            - img [ref=e764]
+            - generic [ref=e21]: Sign In
+    - main [ref=e22]:
+      - generic [ref=e768]:
+        - generic [ref=e769]:
+          - heading "Global Market Overview" [level=1] [ref=e770]
+          - paragraph [ref=e771]: Real-time insights across major agricultural and industrial commodity sectors.
+        - generic [ref=e772]:
+          - button "Grains & Oilseeds" [ref=e773]
+          - button "Metals" [ref=e774]
+          - button "Ocean Transportation" [ref=e775]
+        - generic [ref=e776]:
+          - generic [ref=e777]: Reports
+          - link "Market Analysis" [ref=e778] [cursor=pointer]:
+            - /url: "#"
+            - text: Market Analysis
+            - img [ref=e779]
+          - generic [ref=e781]: "|"
+          - link "Trade Documents" [ref=e782] [cursor=pointer]:
+            - /url: "#"
+            - text: Trade Documents
+            - img [ref=e783]
+        - generic [ref=e785]:
+          - img "Global Market" [ref=e786]
+          - generic [ref=e788]:
+            - generic [ref=e789]: Live Markets
+            - heading "Grains & Oilseeds" [level=2] [ref=e790]
+            - paragraph [ref=e791]: Spot prices, futures curves, and volume data updated in real-time.
+        - generic [ref=e792]:
+          - generic [ref=e793] [cursor=pointer]:
+            - generic [ref=e794]:
+              - heading "Corn Futures" [level=3] [ref=e795]
+              - generic [ref=e796]:
+                - img [ref=e797]
+                - text: +2.4%
+            - paragraph [ref=e800]: $452.25
+            - paragraph [ref=e801]: USD / bu. | CME Group
+            - application [ref=e805]
+          - generic [ref=e810] [cursor=pointer]:
+            - generic [ref=e811]:
+              - heading "Soybeans" [level=3] [ref=e812]
+              - generic [ref=e813]:
+                - img [ref=e814]
+                - text: 0.0%
+            - paragraph [ref=e815]: $1,185.50
+            - paragraph [ref=e816]: USD / bu. | CBOT
+            - application [ref=e820]
+          - generic [ref=e825] [cursor=pointer]:
+            - generic [ref=e826]:
+              - heading "Wheat (SRW)" [level=3] [ref=e827]
+              - generic [ref=e828]:
+                - img [ref=e829]
+                - text: "-1.2%"
+            - paragraph [ref=e832]: $598.75
+            - paragraph [ref=e833]: USD / bu. | CME Group
+            - application [ref=e837]
+        - generic [ref=e842]:
+          - generic [ref=e843]:
+            - generic [ref=e844]:
+              - heading "Investable Funds" [level=2] [ref=e845]
+              - paragraph [ref=e846]: Directly invest in our institutional agricultural funds.
+            - button "View All" [ref=e847]:
+              - text: View All
+              - img [ref=e848]
+          - generic [ref=e850]:
+            - generic [ref=e851]:
+              - img "Global Wheat Fund" [ref=e853]
+              - generic [ref=e854]:
+                - generic [ref=e856]: Grains
+                - heading "Global Wheat Fund" [level=3] [ref=e857]
+                - generic [ref=e858]:
+                  - generic [ref=e859]: +2.1% YTD
+                  - generic [ref=e860]: Min $50,000
+                - button "Invest" [ref=e861]:
+                  - img [ref=e862]
+                  - text: Invest
+            - generic [ref=e865]:
+              - img "Biofuels Initiative" [ref=e867]
+              - generic [ref=e868]:
+                - generic [ref=e870]: Energy
+                - heading "Biofuels Initiative" [level=3] [ref=e871]
+                - generic [ref=e872]:
+                  - generic [ref=e873]: +4.7% YTD
+                  - generic [ref=e874]: Min $25,000
+                - button "Invest" [ref=e875]:
+                  - img [ref=e876]
+                  - text: Invest
+            - generic [ref=e879]:
+              - img "Sustainable Cocoa Fund" [ref=e881]
+              - generic [ref=e882]:
+                - generic [ref=e884]: Agriculture
+                - heading "Sustainable Cocoa Fund" [level=3] [ref=e885]
+                - generic [ref=e886]:
+                  - generic [ref=e887]: +3.2% YTD
+                  - generic [ref=e888]: Min $25,000
+                - button "Invest" [ref=e889]:
+                  - img [ref=e890]
+                  - text: Invest
+            - generic [ref=e893]:
+              - img "Sustainable Harvest Fund" [ref=e895]
+              - generic [ref=e896]:
+                - generic [ref=e898]: Impact
+                - heading "Sustainable Harvest Fund" [level=3] [ref=e899]
+                - generic [ref=e900]:
+                  - generic [ref=e901]: +8.4% YTD
+                  - generic [ref=e902]: Min $100,000
+                - button "Invest" [ref=e903]:
+                  - img [ref=e904]
+                  - text: Invest
+        - generic [ref=e907]:
+          - generic [ref=e908]:
+            - heading "Active Contracts Overview" [level=2] [ref=e909]
+            - button "View All" [ref=e910]:
+              - text: View All
+              - img [ref=e911]
+          - generic [ref=e913]:
+            - generic [ref=e914]: Commodity
+            - generic [ref=e915]: Contract Month
+            - generic [ref=e916]: Last Price
+            - generic [ref=e917]: Change
+            - generic [ref=e918]: Volume
+          - generic [ref=e919]:
+            - generic [ref=e920] [cursor=pointer]:
+              - generic [ref=e921]: Corn
+              - generic [ref=e922]: Dec 2024
+              - generic [ref=e923]: "452.25"
+              - generic [ref=e924]: "+10.50"
+              - generic [ref=e925]: 145,230
+            - generic [ref=e926] [cursor=pointer]:
+              - generic [ref=e927]: Soybeans
+              - generic [ref=e928]: Nov 2024
+              - generic [ref=e929]: "1185.50"
+              - generic [ref=e930]: "0.00"
+              - generic [ref=e931]: 98,412
+            - generic [ref=e932] [cursor=pointer]:
+              - generic [ref=e933]: Wheat
+              - generic [ref=e934]: Sep 2024
+              - generic [ref=e935]: "598.75"
+              - generic [ref=e936]: "-7.25"
+              - generic [ref=e937]: 65,890
+            - generic [ref=e938] [cursor=pointer]:
+              - generic [ref=e939]: Soybean Meal
+              - generic [ref=e940]: Dec 2024
+              - generic [ref=e941]: "345.10"
+              - generic [ref=e942]: "+2.30"
+              - generic [ref=e943]: 42,150
+    - contentinfo [ref=e120]:
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - heading "Cargill" [level=1] [ref=e125]:
+            - generic [ref=e126]: Cargill
+          - paragraph [ref=e127]: Providing institutional investors with robust, data-driven strategies in global agricultural markets.
+          - paragraph [ref=e128]: © 2024 Cargill, Incorporated. All Rights Reserved. Institutional Investment Services.
+        - generic [ref=e129]:
+          - generic [ref=e130]:
+            - heading "Legal" [level=4] [ref=e131]
+            - link "Regulatory Disclosures" [ref=e132] [cursor=pointer]:
+              - /url: "#"
+            - link "Privacy Policy" [ref=e133] [cursor=pointer]:
+              - /url: "#"
+            - link "Terms of Service" [ref=e134] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=e135]:
+            - heading "Connect" [level=4] [ref=e136]
+            - link "Regional Offices" [ref=e137] [cursor=pointer]:
+              - /url: "#"
+            - link "Contact Support" [ref=e138] [cursor=pointer]:
+              - /url: "#"
+          - generic [ref=e139]:
+            - heading "Account" [level=4] [ref=e140]
+            - button "Sign In" [ref=e944]
+  - generic [ref=e424]: Jan

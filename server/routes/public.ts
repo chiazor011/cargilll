@@ -5,7 +5,7 @@ const router = Router();
 
 router.get('/funds', (_req, res) => {
   const funds = db.prepare(`
-    SELECT id, slug, name, sector, description, min_investment_cents as minInvestment, target_yield as targetYield, ytd_return as ytdReturn, aum, image
+    SELECT id, slug, name, sector, description, min_investment_cents as minInvestment, max_investment_cents as maxInvestment, target_yield as targetYield, ytd_return as ytdReturn, aum, image
     FROM funds WHERE is_active = 1
   `).all() as any[];
 
@@ -17,6 +17,7 @@ router.get('/funds', (_req, res) => {
       sector: f.sector,
       description: f.description,
       minInvestment: f.minInvestment / 100,
+      maxInvestment: f.maxInvestment ? f.maxInvestment / 100 : undefined,
       targetYield: f.targetYield,
       ytdReturn: f.ytdReturn,
       aum: f.aum,

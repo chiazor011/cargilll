@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { api } from './lib/api';
 import Layout from './components/layout/Layout';
@@ -8,6 +8,7 @@ import PortfolioPage from './components/dashboard/PortfolioPage';
 import MarketsPage from './components/markets/MarketsPage';
 import FundPage from './components/fund/FundPage';
 import ContactPage from './components/contact/ContactPage';
+import SupportPage from './components/support/SupportPage';
 import AdminPanel from './components/admin/AdminPanel';
 import DepositModal from './components/modals/DepositModal';
 import WithdrawModal from './components/modals/WithdrawModal';
@@ -15,6 +16,8 @@ import InvestModal from './components/modals/InvestModal';
 import SellModal from './components/modals/SellModal';
 import CryptoDepositModal from './components/modals/CryptoDepositModal';
 import BankDepositModal from './components/modals/BankDepositModal';
+import ChatbotWidget from './components/chatbot/ChatbotWidget';
+import { ToastContainer, type Toast } from './components/common/Toast';
 import type { PortfolioState, AvailableFund, Holding } from './types';
 
 function AppContent() {
@@ -35,6 +38,18 @@ function AppContent() {
   const [sellOpen, setSellOpen] = useState(false);
   const [selectedFund, setSelectedFund] = useState<AvailableFund | null>(null);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
+
+  // Toast state
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const addToast = useCallback((message: string, type: Toast['type'] = 'info') => {
+    const id = `${Date.now()}_${Math.random()}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
 
   // Load funds
   useEffect(() => {
@@ -72,8 +87,22 @@ function AppContent() {
     }
   }, [isLoggedIn, isAdmin, activePath]);
 
+  // Handle query params for email verification / password reset
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verifyToken = params.get('token');
+    const path = window.location.pathname;
+
+    if (verifyToken && path.includes('verify-email')) {
+      api.verifyEmail(verifyToken)
+        .then(() => addToast('Email verified successfully!', 'success'))
+        .catch((e: any) => addToast(e.message || 'Verification failed', 'error'));
+    }
+  }, [addToast]);
+
   const navigate = (path: string) => {
     setActivePath(path);
+    window.scrollTo(0, 0);
   };
 
   // Portfolio actions via API
@@ -81,8 +110,9 @@ function AppContent() {
     try {
       await api.deposit(amount, method, details);
       await refreshPortfolio();
+      addToast('Deposit request submitted and is pending approval.', 'success');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -90,8 +120,9 @@ function AppContent() {
     try {
       await api.withdraw(amount, method, destination);
       await refreshPortfolio();
+      addToast('Withdrawal request submitted and is pending approval.', 'success');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -100,8 +131,9 @@ function AppContent() {
       if (!fund.dbId) throw new Error('Fund not found');
       await api.invest(fund.dbId, amount);
       await refreshPortfolio();
+      addToast(`Successfully invested $${amount.toLocaleString()} in ${fund.name}.`, 'success');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -109,8 +141,9 @@ function AppContent() {
     try {
       await api.divest(Number(holding.id), amount);
       await refreshPortfolio();
+      addToast(`Successfully sold $${amount.toLocaleString()} of ${holding.fundName}.`, 'success');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -119,8 +152,9 @@ function AppContent() {
     try {
       await api.approveTx(Number(id), notes);
       await refreshPortfolio();
+      addToast('Transaction approved.', 'success');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -128,8 +162,9 @@ function AppContent() {
     try {
       await api.rejectTx(Number(id), notes);
       await refreshPortfolio();
+      addToast('Transaction rejected.', 'info');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -140,8 +175,9 @@ function AppContent() {
         dailyWithdrawalLimit: settings.dailyWithdrawalLimit,
         fee: settings.fee,
       });
+      addToast('Settings updated.', 'success');
     } catch (e: any) {
-      alert(e.message);
+      addToast(e.message, 'error');
     }
   };
 
@@ -190,6 +226,8 @@ function AppContent() {
         return <FundPage onNavigate={navigate} onInvest={openInvest} availableFunds={funds} />;
       case 'contact':
         return <ContactPage />;
+      case 'support':
+        return <SupportPage />;
       case 'admin':
         return isAdmin ? (
           <AdminPanel
@@ -267,6 +305,9 @@ function AppContent() {
         onSell={handleSell}
         holding={selectedHolding}
       />
+
+      <ChatbotWidget />
+      <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </Layout>
   );
 }

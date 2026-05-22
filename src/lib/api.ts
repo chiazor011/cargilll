@@ -30,6 +30,10 @@ export const api = {
   register: (email: string, password: string, name: string) =>
     apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name }) }),
   me: () => apiFetch('/auth/me'),
+  verifyEmail: (token: string) => apiFetch(`/auth/verify-email?token=${token}`),
+  resendVerification: () => apiFetch('/auth/resend-verification', { method: 'POST' }),
+  forgotPassword: (email: string) => apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) => apiFetch('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
 
   // Public
   funds: () => apiFetch('/funds'),
@@ -46,6 +50,15 @@ export const api = {
     apiFetch('/user/investments', { method: 'POST', body: JSON.stringify({ fundId, amount }) }),
   divest: (holdingId: number, amount: number) =>
     apiFetch('/user/divestments', { method: 'POST', body: JSON.stringify({ holdingId, amount }) }),
+
+  // Support
+  createTicket: (subject: string, message: string) =>
+    apiFetch('/support/tickets', { method: 'POST', body: JSON.stringify({ subject, message }) }),
+  myTickets: () => apiFetch('/support/tickets'),
+
+  // Chatbot
+  chatbotMessage: (message: string, sessionId?: string) =>
+    apiFetch('/chatbot/message', { method: 'POST', body: JSON.stringify({ message, sessionId }) }),
 
   // Admin
   dashboard: () => apiFetch('/admin/dashboard'),
@@ -72,4 +85,7 @@ export const api = {
   adminSettings: () => apiFetch('/admin/settings'),
   updateSettings: (settings: any) =>
     apiFetch('/admin/settings', { method: 'PUT', body: JSON.stringify(settings) }),
+  adminSupportTickets: () => apiFetch('/admin/support-tickets'),
+  replySupportTicket: (id: number, status: string, reply?: string) =>
+    apiFetch(`/admin/support-tickets/${id}/reply`, { method: 'POST', body: JSON.stringify({ status, reply }) }),
 };

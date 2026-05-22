@@ -1,0 +1,104 @@
+- generic [ref=e3]:
+  - navigation [ref=e5]:
+    - generic [ref=e6]:
+      - img "Cargill" [ref=e8] [cursor=pointer]
+      - generic [ref=e9]:
+        - button "Markets" [ref=e10]
+        - button "Investments" [ref=e11]
+        - button "Sustainability" [ref=e12]
+      - generic [ref=e13]:
+        - button "Contact" [ref=e14]
+        - button [ref=e16]:
+          - img [ref=e18]
+  - main [ref=e21]:
+    - generic [ref=e144]:
+      - generic [ref=e145]:
+        - img "Sustainability" [ref=e148]
+        - generic [ref=e150]:
+          - generic [ref=e151]: ✓ Impact Fund Series
+          - heading "Sustainable Harvest Fund" [level=1] [ref=e152]
+          - paragraph [ref=e153]: Investing in the transition to a more resilient, equitable, and decarbonized agricultural future. A core strategy for institutional portfolios seeking measurable real-world impact alongside long-term capital appreciation.
+          - generic [ref=e154]:
+            - button "Invest Now" [ref=e155]:
+              - text: Invest Now
+              - img [ref=e156]
+            - button "Download Prospectus" [ref=e158]:
+              - text: Download Prospectus
+              - img [ref=e159]
+      - generic [ref=e162]:
+        - generic [ref=e163]:
+          - heading "Fund Overview & Impact" [level=2] [ref=e164]
+          - paragraph [ref=e165]: The Sustainable Harvest Fund allocates capital to agricultural enterprises demonstrating clear pathways to carbon reduction, biodiversity enhancement, and improved farmer livelihoods.
+        - generic [ref=e166]:
+          - generic [ref=e167]:
+            - generic [ref=e168]:
+              - heading "Decarbonization Impact" [level=4] [ref=e169]
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic [ref=e172]:
+                    - generic [ref=e173]: 2.4M
+                    - generic [ref=e174]: Metric Tons CO2e
+                  - paragraph [ref=e175]: Cumulative greenhouse gas emissions reduced or sequestered across portfolio holdings since fund inception, independently verified by third-party auditors.
+                - img [ref=e176]
+            - button "View Carbon Methodology" [ref=e178]:
+              - text: View Carbon Methodology
+              - img [ref=e179]
+          - generic [ref=e181]:
+            - generic [ref=e182]:
+              - heading "AUM" [level=4] [ref=e183]:
+                - text: AUM
+                - img [ref=e184]
+              - generic [ref=e186]: $1.2B
+              - generic [ref=e187]: ↑ +8.4% YTD
+            - generic [ref=e188]:
+              - heading "Target Yield" [level=4] [ref=e189]:
+                - text: Target Yield
+                - img [ref=e190]
+              - generic [ref=e192]: 6.5%
+              - generic [ref=e193]:
+                - img [ref=e194]
+                - text: Net of fees
+      - generic [ref=e197]:
+        - heading "Fund Strategy & Allocation" [level=2] [ref=e198]
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - paragraph [ref=e201]: We employ a proprietary framework to identify assets that offer strong financial returns while contributing to the resilience of the global food system. Our approach focuses on three core pillars of agricultural transformation.
+            - generic [ref=e202]:
+              - generic [ref=e203]:
+                - img [ref=e206]
+                - generic [ref=e208]:
+                  - heading "Resource Efficiency" [level=4] [ref=e209]
+                  - paragraph [ref=e210]: Investments in precision agriculture, smart irrigation, and inputs that maximize yield while minimizing environmental footprint.
+              - generic [ref=e211]:
+                - img [ref=e214]
+                - generic [ref=e216]:
+                  - heading "Regenerative Practices" [level=4] [ref=e217]
+                  - paragraph [ref=e218]: Capital allocation towards large-scale transition to no-till farming, cover cropping, and diverse crop rotations.
+              - generic [ref=e219]:
+                - img [ref=e222]
+                - generic [ref=e224]:
+                  - heading "Community Resilience" [level=4] [ref=e225]
+                  - paragraph [ref=e226]: Supporting infrastructure and equitable supply chains that enhance the economic stability of farming communities globally.
+          - img "Strategy" [ref=e228]
+  - contentinfo [ref=e119]:
+    - generic [ref=e121]:
+      - generic [ref=e122]:
+        - heading "Cargill" [level=1] [ref=e124]:
+          - generic [ref=e125]: Cargill
+        - paragraph [ref=e126]: Providing institutional investors with robust, data-driven strategies in global agricultural markets.
+        - paragraph [ref=e127]: © 2024 Cargill, Incorporated. All Rights Reserved. Institutional Investment Services.
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - heading "Legal" [level=4] [ref=e130]
+          - link "Regulatory Disclosures" [ref=e131] [cursor=pointer]:
+            - /url: "#"
+          - link "Privacy Policy" [ref=e132] [cursor=pointer]:
+            - /url: "#"
+          - link "Terms of Service" [ref=e133] [cursor=pointer]:
+            - /url: "#"
+        - generic [ref=e134]:
+          - heading "Connect" [level=4] [ref=e135]
+          - link "Regional Offices" [ref=e136] [cursor=pointer]:
+            - /url: "#"
+          - link "Contact Support" [ref=e137] [cursor=pointer]:
+            - /url: "#"

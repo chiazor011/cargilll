@@ -79,6 +79,7 @@ export function createInvestment(userId: number, fundId: number, amountDollars: 
   if (!fund) throw new Error('Fund not found');
   if (user.balance_cents < amountCents) throw new Error('Insufficient balance');
   if (amountCents < fund.min_investment_cents) throw new Error(`Minimum investment is $${fromCents(fund.min_investment_cents)}`);
+  if (fund.max_investment_cents && amountCents > fund.max_investment_cents) throw new Error(`Maximum investment is $${fromCents(fund.max_investment_cents)}`);
 
   db.prepare(`BEGIN`).run();
   try {

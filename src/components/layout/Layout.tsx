@@ -26,6 +26,8 @@ export default function Layout({ children, activePath, onNavigate, isLoggedIn, i
         { name: 'Sustainability', path: 'fund' },
       ];
 
+  const allPaths = [...navLinks, { name: 'Support', path: 'support' }, { name: 'Contact', path: 'contact' }];
+
   const isActive = (link: { name: string; path: string }) => {
     if (activePath === link.path) return true;
     if (activePath === 'landing' && link.name === 'Investments') return true;
@@ -70,6 +72,13 @@ export default function Layout({ children, activePath, onNavigate, isLoggedIn, i
 
             {/* Right Icons */}
             <div className="hidden lg:flex items-center space-x-5 text-cargill-green">
+              <button
+                onClick={() => onNavigate('support')}
+                className="text-[13px] font-bold uppercase tracking-widest text-gray-500 hover:text-cargill-gray-dark transition-colors"
+              >
+                Support
+              </button>
+              <div className="w-px h-6 bg-gray-100"></div>
               <button
                 onClick={() => onNavigate('contact')}
                 className="text-[13px] font-bold uppercase tracking-widest text-gray-500 hover:text-cargill-gray-dark transition-colors"
@@ -139,6 +148,12 @@ export default function Layout({ children, activePath, onNavigate, isLoggedIn, i
                 </button>
               ))}
               <button
+                onClick={() => { onNavigate('support'); setIsMenuOpen(false); }}
+                className="flex items-center w-full text-xl font-bold text-gray-800 border-b border-gray-50 pb-4"
+              >
+                Support
+              </button>
+              <button
                 onClick={() => { onNavigate('contact'); setIsMenuOpen(false); }}
                 className="flex items-center w-full text-xl font-bold text-gray-800 border-b border-gray-50 pb-4"
               >
@@ -202,8 +217,8 @@ export default function Layout({ children, activePath, onNavigate, isLoggedIn, i
                </div>
                <div className="flex flex-col space-y-4 text-sm">
                  <h4 className="font-bold mb-2 uppercase text-xs tracking-wider">Connect</h4>
-                 <a href="#" className="hover:underline">Regional Offices</a>
-                 <a href="#" className="hover:underline">Contact Support</a>
+                 <button onClick={() => onNavigate('support')} className="text-left hover:underline">Help Center</button>
+                 <button onClick={() => onNavigate('contact')} className="text-left hover:underline">Contact Support</button>
                </div>
                <div className="flex flex-col space-y-4 text-sm">
                  <h4 className="font-bold mb-2 uppercase text-xs tracking-wider">Account</h4>

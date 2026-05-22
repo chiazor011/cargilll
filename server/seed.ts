@@ -6,22 +6,22 @@ const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'DemoPass123!';
 
 const FUNDS = [
   {
-    slug: 'fund-wheat',
-    name: 'Global Wheat Fund',
-    sector: 'Grains',
-    description: 'Invest in the global wheat supply chain from origination to distribution.',
-    min_investment_cents: toCents(50000),
-    target_yield: 5.2,
-    ytd_return: 2.1,
-    aum: '$2.4B',
-    image: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?q=80&w=2643&auto=format&fit=crop',
+    slug: 'fund-starter',
+    name: 'Starter Agriculture Fund',
+    sector: 'Diversified',
+    description: 'A diversified entry-point fund providing broad exposure to global agricultural markets across grains, livestock, and soft commodities. Ideal for new institutional investors seeking stable yields with lower capital commitment.',
+    min_investment_cents: toCents(1000),
+    target_yield: 4.5,
+    ytd_return: 3.2,
+    aum: '$450M',
+    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2532&auto=format&fit=crop',
   },
   {
     slug: 'fund-biofuels',
     name: 'Biofuels Initiative',
     sector: 'Energy',
     description: 'Sustainable energy derived from agricultural feedstocks.',
-    min_investment_cents: toCents(25000),
+    min_investment_cents: toCents(10000),
     target_yield: 6.8,
     ytd_return: 4.7,
     aum: '$1.1B',
@@ -32,18 +32,30 @@ const FUNDS = [
     name: 'Sustainable Cocoa Fund',
     sector: 'Agriculture',
     description: 'Ethical cocoa production supporting farming communities.',
-    min_investment_cents: toCents(25000),
+    min_investment_cents: toCents(10000),
     target_yield: 5.5,
     ytd_return: 3.2,
     aum: '$890M',
     image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?q=80&w=2670&auto=format&fit=crop',
   },
   {
+    slug: 'fund-wheat',
+    name: 'Global Wheat Fund',
+    sector: 'Grains',
+    description: 'Invest in the global wheat supply chain from origination to distribution.',
+    min_investment_cents: toCents(25000),
+    target_yield: 5.2,
+    ytd_return: 2.1,
+    aum: '$2.4B',
+    image: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?q=80&w=2643&auto=format&fit=crop',
+  },
+  {
     slug: 'fund-harvest',
     name: 'Sustainable Harvest Fund',
     sector: 'Impact',
     description: 'ESG-focused agricultural investments with measurable carbon impact.',
-    min_investment_cents: toCents(100000),
+    min_investment_cents: toCents(50000),
+    max_investment_cents: toCents(100000),
     target_yield: 6.5,
     ytd_return: 8.4,
     aum: '$1.2B',
@@ -87,6 +99,9 @@ export async function seed() {
     fundStmt.run(f.slug, f.name, f.sector, f.description, f.min_investment_cents, f.target_yield, f.ytd_return, f.aum, f.image);
   }
 
+  // Update max_investment_cents for existing rows
+  db.prepare(`UPDATE funds SET max_investment_cents = ? WHERE slug = ?`).run(toCents(100000), 'fund-harvest');
+
   // Seed platform settings
   const settings = [
     { key: 'min_deposit', value: '1000' },
@@ -103,16 +118,16 @@ export async function seed() {
   // Seed admin user
   const adminHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
   const adminStmt = db.prepare(`
-    INSERT OR IGNORE INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents)
-    VALUES (?, ?, ?, 'admin', 3, 'verified', 0)
+    INSERT OR IGNORE INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents, email_verified)
+    VALUES (?, ?, ?, 'admin', 3, 'verified', 0, 1)
   `);
   adminStmt.run('admin@cargill.com', adminHash, 'Admin User');
 
   // Seed demo investor with portfolio
   const demoHash = await bcrypt.hash(DEMO_PASSWORD, 12);
   const demoStmt = db.prepare(`
-    INSERT OR IGNORE INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents)
-    VALUES (?, ?, ?, 'investor', 2, 'verified', ?)
+    INSERT OR IGNORE INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents, email_verified)
+    VALUES (?, ?, ?, 'investor', 2, 'verified', ?, 1)
   `);
   demoStmt.run('demo@investor.com', demoHash, 'Demo Investor', toCents(980000));
 

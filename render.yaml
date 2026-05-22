@@ -20,6 +20,27 @@ services:
         value: DemoPass123!
       - key: GEMINI_API_KEY
         sync: false
+      # NEW: SMTP for transactional emails
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: FROM_EMAIL
+        value: cargillinvestmentsstake@gmail.com
+      # NEW: Ollama Cloud chatbot
+      - key: OLLAMA_BASE_URL
+        value: https://ollama.com
+      - key: OLLAMA_API_KEY
+        sync: false
+      - key: OLLAMA_MODEL
+        value: ministral-3:3b
+      # NEW: App URL for email links
+      - key: APP_URL
+        value: https://cargill-institutional.onrender.com
     # NOTE: Free plan does not support disks, so the SQLite DB is ephemeral.
     # Data will reset on every deploy and after spin-down. Upgrade to a paid
     # plan and uncomment the disk block below to persist data.

@@ -28,6 +28,7 @@ export interface AvailableFund {
   sector: string;
   description: string;
   minInvestment: number;
+  maxInvestment?: number;
   targetYield: number;
   ytdReturn: number;
   aum: string;

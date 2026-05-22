@@ -14,6 +14,8 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/user.js';
 import adminRoutes from './routes/admin.js';
 import publicRoutes from './routes/public.js';
+import supportRoutes from './routes/support.js';
+import chatbotRoutes from './routes/chatbot.js';
 
 dotenv.config();
 
@@ -49,6 +51,8 @@ app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 app.use('/api', publicRoutes);
 
 // Health check

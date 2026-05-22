@@ -19,7 +19,8 @@ export default function InvestModal({ isOpen, onClose, onInvest, currentBalance,
 
   const parsedAmount = parseFloat(amount.replace(/,/g, ''));
   const minInvestment = existingHolding ? 1000 : fund.minInvestment;
-  const isValid = !isNaN(parsedAmount) && parsedAmount >= minInvestment && parsedAmount <= currentBalance;
+  const maxInvestment = fund.maxInvestment;
+  const isValid = !isNaN(parsedAmount) && parsedAmount >= minInvestment && parsedAmount <= currentBalance && (!maxInvestment || parsedAmount <= maxInvestment);
 
   const handleSubmit = () => {
     if (!isValid) return;
@@ -89,9 +90,12 @@ export default function InvestModal({ isOpen, onClose, onInvest, currentBalance,
                 />
               </div>
               <div className="flex justify-between mt-1">
-                <p className="text-xs text-gray-400">Minimum: ${minInvestment.toLocaleString()}</p>
+                <p className="text-xs text-gray-400">
+                  Min: ${minInvestment.toLocaleString()}
+                  {maxInvestment && ` | Max: $${maxInvestment.toLocaleString()}`}
+                </p>
                 <button
-                  onClick={() => setAmount(currentBalance.toString())}
+                  onClick={() => setAmount(maxInvestment && maxInvestment < currentBalance ? maxInvestment.toString() : currentBalance.toString())}
                   className="text-xs text-cargill-green font-bold hover:underline"
                 >
                   Max

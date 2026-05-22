@@ -1,0 +1,6 @@
+{
+  "name": "Cargill Institutional",
+  "description": "Institutional Investment platform for global ventures, agriculture, and supply chain infrastructure.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

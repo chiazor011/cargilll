@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Users, DollarSign, ArrowDownLeft, ArrowUpRight, Activity, CheckCircle, XCircle,
   Clock, Shield, Search, Settings, BarChart3, Wallet, TrendingUp, AlertTriangle,
-  Banknote, Bitcoin, ChevronRight, Filter
+  Banknote, Bitcoin, ChevronRight, Filter, MessageSquare, Ticket
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import type { Transaction, AvailableFund } from '../../types';
@@ -34,7 +34,7 @@ interface AdminPanelProps {
   onUpdateSettings: (settings: { minDeposit: number; dailyWithdrawalLimit: number; fee: number }) => void;
 }
 
-type Tab = 'dashboard' | 'pending-deposits' | 'pending-withdrawals' | 'users' | 'funds' | 'settings';
+type Tab = 'dashboard' | 'pending-deposits' | 'pending-withdrawals' | 'users' | 'funds' | 'settings' | 'support-tickets';
 
 export default function AdminPanel({ transactions, availableFunds, onApproveTransaction, onRejectTransaction, onUpdateSettings }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -50,6 +50,11 @@ export default function AdminPanel({ transactions, availableFunds, onApproveTran
   const [platformSettings, setPlatformSettings] = useState<Record<string, any>>({});
   const [settingsForm, setSettingsForm] = useState({ minDeposit: 1000, dailyWithdrawalLimit: 50000, fee: 0.5 });
   const [loading, setLoading] = useState(false);
+  const [supportTickets, setSupportTickets] = useState<any[]>([]);
+  const [ticketReplyModal, setTicketReplyModal] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [ticketReplyText, setTicketReplyText] = useState('');
+  const [ticketReplyStatus, setTicketReplyStatus] = useState('open');
 
   // Fetch dashboard stats on mount
   useEffect(() => {
@@ -86,6 +91,12 @@ export default function AdminPanel({ transactions, availableFunds, onApproveTran
         })
         .catch(console.error)
         .finally(() => setLoading(false));
+    } else if (activeTab === 'support-tickets') {
+      setLoading(true);
+      api.adminSupportTickets()
+        .then(data => { setSupportTickets(data.tickets || []); })
+        .catch(console.error)
+        .finally(() => setLoading(false));
     }
   }, [activeTab]);
 
@@ -93,10 +104,13 @@ export default function AdminPanel({ transactions, availableFunds, onApproveTran
   const pendingWithdrawals = adminTransactions.filter(t => t.type === 'withdrawal' && t.status === 'Pending');
   const totalVolume = adminTransactions.reduce((s, t) => s + Math.abs(t.amount), 0);
 
+  const openTicketCount = supportTickets.filter((t: any) => t.status === 'open' || t.status === 'in_progress').length;
+
   const tabs = [
     { id: 'dashboard' as Tab, label: 'Dashboard', icon: BarChart3 },
     { id: 'pending-deposits' as Tab, label: 'Pending Deposits', icon: ArrowDownLeft, badge: pendingDeposits.length },
     { id: 'pending-withdrawals' as Tab, label: 'Pending Withdrawals', icon: ArrowUpRight, badge: pendingWithdrawals.length },
+    { id: 'support-tickets' as Tab, label: 'Support Tickets', icon: MessageSquare, badge: openTicketCount },
     { id: 'users' as Tab, label: 'Users', icon: Users },
     { id: 'funds' as Tab, label: 'Funds', icon: Wallet },
     { id: 'settings' as Tab, label: 'Settings', icon: Settings },
@@ -604,6 +618,130 @@ export default function AdminPanel({ transactions, availableFunds, onApproveTran
           </div>
         )}
       </div>
+
+        {/* Support Tickets */}
+        {activeTab === 'support-tickets' && !loading && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-5 h-5 text-cargill-green" />
+                <h2 className="text-xl font-bold text-gray-900">Support Tickets</h2>
+                <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md text-xs font-bold">{openTicketCount} open</span>
+              </div>
+            </div>
+
+            {supportTickets.length === 0 ? (
+              <div className="p-12 text-center">
+                <Ticket className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-600 font-bold">No support tickets</p>
+                <p className="text-sm text-gray-400">Tickets submitted by users will appear here.</p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-[#052b14] text-white flex px-6 py-4 font-semibold text-xs uppercase tracking-wider">
+                  <div className="w-[15%]">Date</div>
+                  <div className="w-[20%]">User</div>
+                  <div className="flex-1">Subject</div>
+                  <div className="w-[15%]">Status</div>
+                  <div className="w-[15%] text-right">Actions</div>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {supportTickets.map((t: any) => (
+                    <div key={t.id} className="flex px-6 py-5 items-start hover:bg-gray-50 transition-colors">
+                      <div className="w-[15%] text-sm text-gray-500">{new Date(t.createdAt).toLocaleDateString()}</div>
+                      <div className="w-[20%]">
+                        <p className="text-sm font-bold text-gray-900 truncate">{t.userName}</p>
+                        <p className="text-xs text-gray-400 truncate">{t.userEmail}</p>
+                      </div>
+                      <div className="flex-1 pr-4">
+                        <p className="text-sm font-bold text-gray-900">{t.subject}</p>
+                        <p className="text-xs text-gray-500 mt-1">{t.message}</p>
+                        {t.adminReply && (
+                          <p className="text-xs text-cargill-green mt-1">Reply: {t.adminReply}</p>
+                        )}
+                      </div>
+                      <div className="w-[15%]">
+                        <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                          t.status === 'open' ? 'bg-amber-50 text-amber-600' :
+                          t.status === 'in_progress' ? 'bg-blue-50 text-blue-600' :
+                          t.status === 'resolved' ? 'bg-green-50 text-green-600' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {t.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="w-[15%] text-right">
+                        <button
+                          onClick={() => { setSelectedTicketId(t.id); setTicketReplyStatus(t.status); setTicketReplyText(t.adminReply || ''); setTicketReplyModal(true); }}
+                          className="px-3 py-1.5 rounded-md bg-cargill-green-brand text-white text-xs font-bold hover:bg-[#0c7036] transition-colors"
+                        >
+                          Reply
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+      {/* Ticket Reply Modal */}
+      {ticketReplyModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setTicketReplyModal(false)} />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-cargill-green-light flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-cargill-green" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900">Reply to Ticket</h3>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">Status</label>
+              <select
+                value={ticketReplyStatus}
+                onChange={(e) => setTicketReplyStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+            <textarea
+              value={ticketReplyText}
+              onChange={(e) => setTicketReplyText(e.target.value)}
+              placeholder="Type your reply..."
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cargill-green focus:border-transparent text-sm mb-4 resize-none"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setTicketReplyModal(false)}
+                className="flex-1 py-2.5 rounded-lg border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!selectedTicketId) return;
+                  try {
+                    await api.replySupportTicket(selectedTicketId, ticketReplyStatus, ticketReplyText);
+                    const data = await api.adminSupportTickets();
+                    setSupportTickets(data.tickets || []);
+                  } catch (e: any) { alert(e.message); }
+                  setTicketReplyModal(false);
+                }}
+                className="flex-1 py-2.5 rounded-lg bg-cargill-green-brand text-white font-bold text-sm hover:bg-[#0c7036] transition-colors"
+              >
+                Save Reply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reject Modal */}
       {rejectModalOpen && (

@@ -9,6 +9,7 @@ interface User {
   tier: number;
   kycStatus: string;
   balance: number;
+  emailVerified: boolean;
 }
 
 interface AuthContextType {
