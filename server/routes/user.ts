@@ -10,9 +10,9 @@ const router = Router();
 router.use(authMiddleware);
 
 // GET /api/user/portfolio
-router.get('/portfolio', (req, res) => {
+router.get('/portfolio', async (req, res) => {
   try {
-    const portfolio = getPortfolio(req.user!.id);
+    const portfolio = await getPortfolio(req.user!.id);
     res.json(portfolio);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
@@ -26,9 +26,9 @@ const depositSchema = z.object({
   paymentDetails: z.string().optional(),
 });
 
-router.post('/deposits', validate(depositSchema), (req, res) => {
+router.post('/deposits', validate(depositSchema), async (req, res) => {
   try {
-    const tx = createDeposit(req.user!.id, req.body.amount, req.body.method, req.body.paymentDetails);
+    const tx = await createDeposit(req.user!.id, req.body.amount, req.body.method, req.body.paymentDetails);
     res.json({ transaction: formatTransaction(tx) });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
@@ -42,9 +42,9 @@ const withdrawalSchema = z.object({
   destination: z.string().min(1),
 });
 
-router.post('/withdrawals', validate(withdrawalSchema), (req, res) => {
+router.post('/withdrawals', validate(withdrawalSchema), async (req, res) => {
   try {
-    const tx = createWithdrawal(req.user!.id, req.body.amount, req.body.method, req.body.destination);
+    const tx = await createWithdrawal(req.user!.id, req.body.amount, req.body.method, req.body.destination);
     res.json({ transaction: formatTransaction(tx) });
   } catch (e: any) {
     res.status(400).json({ error: e.message });
@@ -57,9 +57,9 @@ const investSchema = z.object({
   amount: z.number().positive(),
 });
 
-router.post('/investments', validate(investSchema), (req, res) => {
+router.post('/investments', validate(investSchema), async (req, res) => {
   try {
-    const result = createInvestment(req.user!.id, req.body.fundId, req.body.amount);
+    const result = await createInvestment(req.user!.id, req.body.fundId, req.body.amount);
     res.json({
       newBalance: result.newBalance,
       holding: result.holding ? {
@@ -83,9 +83,9 @@ const divestSchema = z.object({
   amount: z.number().positive(),
 });
 
-router.post('/divestments', validate(divestSchema), (req, res) => {
+router.post('/divestments', validate(divestSchema), async (req, res) => {
   try {
-    const result = createDivestment(req.user!.id, req.body.holdingId, req.body.amount);
+    const result = await createDivestment(req.user!.id, req.body.holdingId, req.body.amount);
     res.json({
       newBalance: result.newBalance,
       holding: result.holding ? {

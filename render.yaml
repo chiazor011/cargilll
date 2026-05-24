@@ -10,8 +10,8 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: DATABASE_PATH
-        value: /opt/render/project/src/data/platform.db
+      - key: DATABASE_URL
+        value: postgresql://cargilldb_user:Y3qjc3x2seNnBL2nK2WQmsV6xf47p7Wb@dpg-d88h0akm0tmc7386ctu0-a/cargilldb
       - key: JWT_SECRET
         value: cargill-jwt-secret-2026-render-deploy
       - key: ADMIN_PASSWORD
@@ -41,10 +41,3 @@ services:
       # App URL for email links and CORS
       - key: APP_URL
         value: https://cargill-institutional.onrender.com
-    # NOTE: Free plan does not support disks, so the SQLite DB is ephemeral.
-    # Data will reset on every deploy and after spin-down. Upgrade to a paid
-    # plan and uncomment the disk block below to persist data.
-    # disk:
-    #   name: data
-    #   mountPath: /opt/render/project/src/data
-    #   sizeGB: 1

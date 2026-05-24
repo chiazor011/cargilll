@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../db.js';
+import { queryOne, runQuery } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
@@ -42,7 +42,7 @@ router.post('/message', async (req, res) => {
     }
 
     // Retrieve or create session
-    let session = db.prepare(`SELECT * FROM chat_sessions WHERE session_id = ?`).get(sessionId || '') as any;
+    let session = await queryOne(`SELECT * FROM chat_sessions WHERE session_id = ?`, [sessionId || '']) as any;
     let messages: { role: string; content: string }[] = [];
 
     if (session) {
@@ -76,7 +76,11 @@ Be concise, professional, and helpful. If unsure, direct the user to create a su
     // Save session
     const sid = sessionId || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const userId = (req as any).user?.id || null;
-    db.prepare(`INSERT OR REPLACE INTO chat_sessions (session_id, user_id, messages) VALUES (?, ?, ?)`).run(sid, userId, JSON.stringify(messages));
+    await runQuery(
+      `INSERT INTO chat_sessions (session_id, user_id, messages) VALUES (?, ?, ?)
+       ON CONFLICT (session_id) DO UPDATE SET user_id = EXCLUDED.user_id, messages = EXCLUDED.messages, updated_at = CURRENT_TIMESTAMP`,
+      [sid, userId, JSON.stringify(messages)]
+    );
 
     res.json({ reply, sessionId: sid });
   } catch (e: any) {

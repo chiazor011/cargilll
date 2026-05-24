@@ -69,10 +69,17 @@ app.get('*', (_req, res) => {
 app.use(errorHandler);
 
 // Init DB + seed
-initSchema();
-seed().catch(console.error);
+async function start() {
+  await initSchema();
+  await seed();
 
-app.listen(PORT, () => {
-  console.log(`[server] API running on http://localhost:${PORT}`);
-  console.log(`[server] Frontend should be at ${APP_URL}`);
+  app.listen(PORT, () => {
+    console.log(`[server] API running on http://localhost:${PORT}`);
+    console.log(`[server] Frontend should be at ${APP_URL}`);
+  });
+}
+
+start().catch((err) => {
+  console.error('[server] Failed to start:', err);
+  process.exit(1);
 });

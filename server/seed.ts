@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { db, toCents } from './db.js';
+import { runQuery, toCents } from './db.js';
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'AdminPass123!';
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'DemoPass123!';
@@ -91,16 +91,20 @@ const BANK_DETAILS = {
 
 export async function seed() {
   // Seed funds
-  const fundStmt = db.prepare(`
-    INSERT OR IGNORE INTO funds (slug, name, sector, description, min_investment_cents, target_yield, ytd_return, aum, image)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
   for (const f of FUNDS) {
-    fundStmt.run(f.slug, f.name, f.sector, f.description, f.min_investment_cents, f.target_yield, f.ytd_return, f.aum, f.image);
+    await runQuery(
+      `INSERT INTO funds (slug, name, sector, description, min_investment_cents, target_yield, ytd_return, aum, image)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (slug) DO NOTHING`,
+      [f.slug, f.name, f.sector, f.description, f.min_investment_cents, f.target_yield, f.ytd_return, f.aum, f.image]
+    );
   }
 
   // Update max_investment_cents for existing rows
-  db.prepare(`UPDATE funds SET max_investment_cents = ? WHERE slug = ?`).run(toCents(100000), 'fund-harvest');
+  await runQuery(
+    `UPDATE funds SET max_investment_cents = ? WHERE slug = ?`,
+    [toCents(100000), 'fund-harvest']
+  );
 
   // Seed platform settings
   const settings = [
@@ -110,47 +114,56 @@ export async function seed() {
     { key: 'wallet_addresses', value: JSON.stringify(CRYPTO_ADDRESSES) },
     { key: 'bank_details', value: JSON.stringify(BANK_DETAILS) },
   ];
-  const settingStmt = db.prepare(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)`);
   for (const s of settings) {
-    settingStmt.run(s.key, s.value);
+    await runQuery(
+      `INSERT INTO platform_settings (key, value) VALUES (?, ?)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [s.key, s.value]
+    );
   }
 
   // Seed admin user
   const adminHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
-  const adminStmt = db.prepare(`
-    INSERT OR IGNORE INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents, email_verified)
-    VALUES (?, ?, ?, 'admin', 3, 'verified', 0, 1)
-  `);
-  adminStmt.run('admin@cargill.com', adminHash, 'Admin User');
+  await runQuery(
+    `INSERT INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents, email_verified)
+     VALUES (?, ?, ?, 'admin', 3, 'verified', 0, 1)
+     ON CONFLICT (email) DO NOTHING`,
+    ['admin@cargill.com', adminHash, 'Admin User']
+  );
 
   // Seed demo investor with portfolio
   const demoHash = await bcrypt.hash(DEMO_PASSWORD, 12);
-  const demoStmt = db.prepare(`
-    INSERT OR IGNORE INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents, email_verified)
-    VALUES (?, ?, ?, 'investor', 2, 'verified', ?, 1)
-  `);
-  demoStmt.run('demo@investor.com', demoHash, 'Demo Investor', toCents(980000));
+  await runQuery(
+    `INSERT INTO users (email, password_hash, name, role, tier, kyc_status, balance_cents, email_verified)
+     VALUES (?, ?, ?, 'investor', 2, 'verified', ?, 1)
+     ON CONFLICT (email) DO NOTHING`,
+    ['demo@investor.com', demoHash, 'Demo Investor', toCents(980000)]
+  );
 
-  const demoUser = db.prepare(`SELECT id FROM users WHERE email = ?`).get('demo@investor.com') as { id: number } | undefined;
+  const demoUser = (await runQuery(`SELECT id FROM users WHERE email = ?`, ['demo@investor.com'])).rows[0] as { id: number } | undefined;
   if (demoUser) {
     // Seed holdings
-    const wheatFund = db.prepare(`SELECT id FROM funds WHERE slug = ?`).get('fund-wheat') as { id: number } | undefined;
-    const bioFund = db.prepare(`SELECT id FROM funds WHERE slug = ?`).get('fund-biofuels') as { id: number } | undefined;
+    const wheatFund = (await runQuery(`SELECT id FROM funds WHERE slug = ?`, ['fund-wheat'])).rows[0] as { id: number } | undefined;
+    const bioFund = (await runQuery(`SELECT id FROM funds WHERE slug = ?`, ['fund-biofuels'])).rows[0] as { id: number } | undefined;
 
     if (wheatFund) {
-      db.prepare(`INSERT OR IGNORE INTO holdings (user_id, fund_id, invested_cents, current_cents) VALUES (?, ?, ?, ?)`)
-        .run(demoUser.id, wheatFund.id, toCents(850000), toCents(867850));
+      await runQuery(
+        `INSERT INTO holdings (user_id, fund_id, invested_cents, current_cents)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (user_id, fund_id) DO NOTHING`,
+        [demoUser.id, wheatFund.id, toCents(850000), toCents(867850)]
+      );
     }
     if (bioFund) {
-      db.prepare(`INSERT OR IGNORE INTO holdings (user_id, fund_id, invested_cents, current_cents) VALUES (?, ?, ?, ?)`)
-        .run(demoUser.id, bioFund.id, toCents(620000), toCents(649140));
+      await runQuery(
+        `INSERT INTO holdings (user_id, fund_id, invested_cents, current_cents)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT (user_id, fund_id) DO NOTHING`,
+        [demoUser.id, bioFund.id, toCents(620000), toCents(649140)]
+      );
     }
 
     // Seed transactions
-    const txStmt = db.prepare(`
-      INSERT OR IGNORE INTO transactions (user_id, type, amount_cents, status, description, fund_name, created_at)
-      VALUES (?, ?, ?, 'Completed', ?, ?, ?)
-    `);
     const txs = [
       { type: 'dividend', amount: 4250, desc: 'Global Wheat Fund quarterly dividend', fund: 'Global Wheat Fund', date: '2023-10-24' },
       { type: 'investment', amount: -50000, desc: 'Investment in Biofuels Initiative', fund: 'Biofuels Initiative', date: '2023-10-15' },
@@ -160,7 +173,12 @@ export async function seed() {
       { type: 'investment', amount: -200000, desc: 'Investment in Global Wheat Fund', fund: 'Global Wheat Fund', date: '2023-08-20' },
     ];
     for (const t of txs) {
-      txStmt.run(demoUser.id, t.type, toCents(t.amount), t.desc, t.fund, t.date);
+      await runQuery(
+        `INSERT INTO transactions (user_id, type, amount_cents, status, description, fund_name, created_at)
+         VALUES (?, ?, ?, 'Completed', ?, ?, ?)
+         ON CONFLICT DO NOTHING`,
+        [demoUser.id, t.type, toCents(t.amount), t.desc, t.fund, t.date]
+      );
     }
   }
 

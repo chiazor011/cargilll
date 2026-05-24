@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { z } from 'zod';
-import { db } from '../db.js';
+import { queryOne, runQuery } from '../db.js';
 import { authMiddleware, signToken } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { sendWelcomeEmail, sendVerificationEmail, sendPasswordResetEmail } from '../services/emailService.js';
@@ -45,7 +45,7 @@ function userToResponse(user: any) {
 router.post('/register', validate(registerSchema), async (req, res) => {
   const { email, password, name } = req.body;
 
-  const existing = db.prepare(`SELECT id FROM users WHERE email = ?`).get(email);
+  const existing = await queryOne(`SELECT id FROM users WHERE email = ?`, [email]);
   if (existing) {
     res.status(409).json({ error: 'Email already registered' });
     return;
@@ -54,12 +54,13 @@ router.post('/register', validate(registerSchema), async (req, res) => {
   const hash = await bcrypt.hash(password, 12);
   const verificationToken = crypto.randomBytes(32).toString('hex');
 
-  const result = db.prepare(`
+  const result = await runQuery(`
     INSERT INTO users (email, password_hash, name, role, tier, kyc_status, email_verification_token)
     VALUES (?, ?, ?, 'investor', 1, 'none', ?)
-  `).run(email, hash, name, verificationToken);
+    RETURNING *
+  `, [email, hash, name, verificationToken]);
 
-  const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(result.lastInsertRowid);
+  const user = result.rows[0];
   const token = signToken(user.id);
 
   // Send emails in background
@@ -72,7 +73,7 @@ router.post('/register', validate(registerSchema), async (req, res) => {
 router.post('/login', validate(loginSchema), async (req, res) => {
   const { email, password } = req.body;
 
-  const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(email) as any;
+  const user = await queryOne(`SELECT * FROM users WHERE email = ?`, [email]) as any;
   if (!user) {
     res.status(401).json({ error: 'Invalid credentials' });
     return;
@@ -88,8 +89,8 @@ router.post('/login', validate(loginSchema), async (req, res) => {
   res.json({ token, user: userToResponse(user) });
 });
 
-router.get('/me', authMiddleware, (req, res) => {
-  const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user!.id) as any;
+router.get('/me', authMiddleware, async (req, res) => {
+  const user = await queryOne(`SELECT * FROM users WHERE id = ?`, [req.user!.id]) as any;
   if (!user) {
     res.status(404).json({ error: 'User not found' });
     return;
@@ -98,26 +99,26 @@ router.get('/me', authMiddleware, (req, res) => {
 });
 
 // Verify email
-router.get('/verify-email', (req, res) => {
+router.get('/verify-email', async (req, res) => {
   const token = req.query.token as string;
   if (!token) {
     res.status(400).json({ error: 'Token required' });
     return;
   }
 
-  const user = db.prepare(`SELECT * FROM users WHERE email_verification_token = ?`).get(token) as any;
+  const user = await queryOne(`SELECT * FROM users WHERE email_verification_token = ?`, [token]) as any;
   if (!user) {
     res.status(400).json({ error: 'Invalid or expired token' });
     return;
   }
 
-  db.prepare(`UPDATE users SET email_verified = 1, email_verification_token = NULL WHERE id = ?`).run(user.id);
+  await runQuery(`UPDATE users SET email_verified = 1, email_verification_token = NULL WHERE id = ?`, [user.id]);
   res.json({ success: true, message: 'Email verified successfully' });
 });
 
 // Resend verification email
-router.post('/resend-verification', authMiddleware, (req, res) => {
-  const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(req.user!.id) as any;
+router.post('/resend-verification', authMiddleware, async (req, res) => {
+  const user = await queryOne(`SELECT * FROM users WHERE id = ?`, [req.user!.id]) as any;
   if (!user) {
     res.status(404).json({ error: 'User not found' });
     return;
@@ -128,7 +129,7 @@ router.post('/resend-verification', authMiddleware, (req, res) => {
   }
 
   const verificationToken = crypto.randomBytes(32).toString('hex');
-  db.prepare(`UPDATE users SET email_verification_token = ? WHERE id = ?`).run(verificationToken, user.id);
+  await runQuery(`UPDATE users SET email_verification_token = ? WHERE id = ?`, [verificationToken, user.id]);
   sendVerificationEmail(user.email, user.name, verificationToken).catch(console.error);
   res.json({ success: true });
 });
@@ -136,7 +137,7 @@ router.post('/resend-verification', authMiddleware, (req, res) => {
 // Forgot password
 router.post('/forgot-password', validate(forgotSchema), async (req, res) => {
   const { email } = req.body;
-  const user = db.prepare(`SELECT * FROM users WHERE email = ?`).get(email) as any;
+  const user = await queryOne(`SELECT * FROM users WHERE email = ?`, [email]) as any;
   if (!user) {
     res.status(200).json({ success: true, message: 'If an account exists, a reset email has been sent.' });
     return;
@@ -145,7 +146,7 @@ router.post('/forgot-password', validate(forgotSchema), async (req, res) => {
   const resetToken = crypto.randomBytes(32).toString('hex');
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
-  db.prepare(`UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?`).run(resetToken, expires, user.id);
+  await runQuery(`UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?`, [resetToken, expires, user.id]);
   sendPasswordResetEmail(user.email, user.name, resetToken).catch(console.error);
   res.json({ success: true, message: 'If an account exists, a reset email has been sent.' });
 });
@@ -153,7 +154,7 @@ router.post('/forgot-password', validate(forgotSchema), async (req, res) => {
 // Reset password
 router.post('/reset-password', validate(resetSchema), async (req, res) => {
   const { token, password } = req.body;
-  const user = db.prepare(`SELECT * FROM users WHERE password_reset_token = ?`).get(token) as any;
+  const user = await queryOne(`SELECT * FROM users WHERE password_reset_token = ?`, [token]) as any;
   if (!user) {
     res.status(400).json({ error: 'Invalid or expired token' });
     return;
@@ -164,7 +165,7 @@ router.post('/reset-password', validate(resetSchema), async (req, res) => {
   }
 
   const hash = await bcrypt.hash(password, 12);
-  db.prepare(`UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?`).run(hash, user.id);
+  await runQuery(`UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?`, [hash, user.id]);
   res.json({ success: true, message: 'Password reset successfully' });
 });
 

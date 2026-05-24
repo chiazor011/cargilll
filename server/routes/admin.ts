@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminMiddleware } from '../middleware/admin.js';
 import { validate } from '../middleware/validate.js';
-import { db, fromCents, toCents } from '../db.js';
+import { queryOne, queryMany, runQuery, fromCents, toCents } from '../db.js';
 import { approveTransaction, rejectTransaction, formatTransaction } from '../services/transactionService.js';
 import { sendTransactionStatusEmail } from '../services/emailService.js';
 
@@ -12,36 +12,37 @@ const router = Router();
 router.use(authMiddleware, adminMiddleware);
 
 // GET /api/admin/dashboard
-router.get('/dashboard', (_req, res) => {
-  const totalUsers = (db.prepare(`SELECT COUNT(*) as c FROM users`).get() as any).c;
-  const pendingDeposits = (db.prepare(`SELECT COUNT(*) as c FROM transactions WHERE status = 'Pending' AND type = 'deposit'`).get() as any).c;
-  const pendingWithdrawals = (db.prepare(`SELECT COUNT(*) as c FROM transactions WHERE status = 'Pending' AND type = 'withdrawal'`).get() as any).c;
-  const totalTransactions = (db.prepare(`SELECT COUNT(*) as c FROM transactions`).get() as any).c;
-  const openTickets = (db.prepare(`SELECT COUNT(*) as c FROM support_tickets WHERE status IN ('open', 'in_progress')`).get() as any).c;
+router.get('/dashboard', async (_req, res) => {
+  const totalUsers = ((await queryOne(`SELECT COUNT(*)::int as c FROM users`)) as any)?.c || 0;
+  const pendingDeposits = ((await queryOne(`SELECT COUNT(*)::int as c FROM transactions WHERE status = 'Pending' AND type = 'deposit'`)) as any)?.c || 0;
+  const pendingWithdrawals = ((await queryOne(`SELECT COUNT(*)::int as c FROM transactions WHERE status = 'Pending' AND type = 'withdrawal'`)) as any)?.c || 0;
+  const totalTransactions = ((await queryOne(`SELECT COUNT(*)::int as c FROM transactions`)) as any)?.c || 0;
+  const openTickets = ((await queryOne(`SELECT COUNT(*)::int as c FROM support_tickets WHERE status IN ('open', 'in_progress')`)) as any)?.c || 0;
 
   // Calculate total AUM from all holdings
-  const totalHoldingsCents = (db.prepare(`SELECT SUM(current_cents) as s FROM holdings`).get() as any)?.s || 0;
-  const totalCashCents = (db.prepare(`SELECT SUM(balance_cents) as s FROM users`).get() as any)?.s || 0;
+  // PostgreSQL SUM returns bigint as string; parse to number to avoid string concatenation
+  const totalHoldingsCents = Number(((await queryOne(`SELECT SUM(current_cents) as s FROM holdings`)) as any)?.s || 0);
+  const totalCashCents = Number(((await queryOne(`SELECT SUM(balance_cents) as s FROM users`)) as any)?.s || 0);
   const totalAum = fromCents(totalHoldingsCents + totalCashCents);
 
   res.json({ totalUsers, totalAum, pendingDeposits, pendingWithdrawals, totalTransactions, openTickets });
 });
 
 // GET /api/admin/users
-router.get('/users', (req, res) => {
+router.get('/users', async (req, res) => {
   const search = (req.query.search as string) || '';
   const limit = Number(req.query.limit) || 50;
   const offset = Number(req.query.offset) || 0;
 
-  const users = db.prepare(`
+  const users = await queryMany(`
     SELECT id, email, name, role, tier, kyc_status, balance_cents, created_at
     FROM users
-    WHERE name LIKE ? OR email LIKE ?
+    WHERE name ILIKE ? OR email ILIKE ?
     ORDER BY created_at DESC
     LIMIT ? OFFSET ?
-  `).all(`%${search}%`, `%${search}%`, limit, offset) as any[];
+  `, [`%${search}%`, `%${search}%`, limit, offset]) as any[];
 
-  const total = (db.prepare(`SELECT COUNT(*) as c FROM users WHERE name LIKE ? OR email LIKE ?`).get(`%${search}%`, `%${search}%`) as any).c;
+  const total = ((await queryOne(`SELECT COUNT(*)::int as c FROM users WHERE name ILIKE ? OR email ILIKE ?`, [`%${search}%`, `%${search}%`])) as any)?.c || 0;
 
   res.json({
     users: users.map(u => ({
@@ -59,7 +60,7 @@ router.get('/users', (req, res) => {
 });
 
 // GET /api/admin/transactions
-router.get('/transactions', (req, res) => {
+router.get('/transactions', async (req, res) => {
   const type = req.query.type as string || '';
   const status = req.query.status as string || '';
   const limit = Number(req.query.limit) || 50;
@@ -73,17 +74,17 @@ router.get('/transactions', (req, res) => {
   query += ` ORDER BY t.created_at DESC LIMIT ? OFFSET ?`;
   params.push(limit, offset);
 
-  const transactions = db.prepare(query).all(...params) as any[];
+  const transactions = await queryMany(query, params) as any[];
   res.json({ transactions: transactions.map(formatTransaction) });
 });
 
 // POST /api/admin/transactions/:id/approve
 const approveSchema = z.object({ adminNotes: z.string().optional() });
 
-router.post('/transactions/:id/approve', validate(approveSchema), (req, res) => {
+router.post('/transactions/:id/approve', validate(approveSchema), async (req, res) => {
   try {
-    const tx = approveTransaction(Number(req.params.id), req.body.adminNotes);
-    const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(tx.user_id) as any;
+    const tx = await approveTransaction(Number(req.params.id), req.body.adminNotes);
+    const user = await queryOne(`SELECT * FROM users WHERE id = ?`, [tx.user_id]) as any;
     if (user) {
       sendTransactionStatusEmail(user.email, user.name, tx.type, tx.status, fromCents(tx.amount_cents), req.body.adminNotes).catch(console.error);
     }
@@ -96,10 +97,10 @@ router.post('/transactions/:id/approve', validate(approveSchema), (req, res) => 
 // POST /api/admin/transactions/:id/reject
 const rejectSchema = z.object({ adminNotes: z.string().optional() });
 
-router.post('/transactions/:id/reject', validate(rejectSchema), (req, res) => {
+router.post('/transactions/:id/reject', validate(rejectSchema), async (req, res) => {
   try {
-    const tx = rejectTransaction(Number(req.params.id), req.body.adminNotes);
-    const user = db.prepare(`SELECT * FROM users WHERE id = ?`).get(tx.user_id) as any;
+    const tx = await rejectTransaction(Number(req.params.id), req.body.adminNotes);
+    const user = await queryOne(`SELECT * FROM users WHERE id = ?`, [tx.user_id]) as any;
     if (user) {
       sendTransactionStatusEmail(user.email, user.name, tx.type, tx.status, fromCents(tx.amount_cents), req.body.adminNotes).catch(console.error);
     }
@@ -110,8 +111,8 @@ router.post('/transactions/:id/reject', validate(rejectSchema), (req, res) => {
 });
 
 // GET /api/admin/funds
-router.get('/funds', (_req, res) => {
-  const funds = db.prepare(`SELECT * FROM funds ORDER BY created_at DESC`).all() as any[];
+router.get('/funds', async (_req, res) => {
+  const funds = await queryMany(`SELECT * FROM funds ORDER BY created_at DESC`) as any[];
   res.json({ funds });
 });
 
@@ -128,20 +129,21 @@ const fundSchema = z.object({
   image: z.string().min(1),
 });
 
-router.post('/funds', validate(fundSchema), (req, res) => {
+router.post('/funds', validate(fundSchema), async (req, res) => {
   const { slug, name, sector, description, minInvestment, targetYield, ytdReturn, aum, image } = req.body;
-  const result = db.prepare(`
+  const result = await runQuery(`
     INSERT INTO funds (slug, name, sector, description, min_investment_cents, target_yield, ytd_return, aum, image)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(slug, name, sector, description, toCents(minInvestment), targetYield, ytdReturn, aum, image);
+    RETURNING *
+  `, [slug, name, sector, description, toCents(minInvestment), targetYield, ytdReturn, aum, image]);
 
-  const fund = db.prepare(`SELECT * FROM funds WHERE id = ?`).get(result.lastInsertRowid);
+  const fund = result.rows[0];
   res.json({ fund });
 });
 
 // PUT /api/admin/funds/:id
-router.put('/funds/:id', validate(fundSchema.partial()), (req, res) => {
-  const fund = db.prepare(`SELECT * FROM funds WHERE id = ?`).get(req.params.id) as any;
+router.put('/funds/:id', validate(fundSchema.partial()), async (req, res) => {
+  const fund = await queryOne(`SELECT * FROM funds WHERE id = ?`, [req.params.id]) as any;
   if (!fund) {
     res.status(404).json({ error: 'Fund not found' });
     return;
@@ -166,15 +168,15 @@ router.put('/funds/:id', validate(fundSchema.partial()), (req, res) => {
   }
 
   values.push(req.params.id);
-  db.prepare(`UPDATE funds SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(...values);
+  await runQuery(`UPDATE funds SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, values);
 
-  const updated = db.prepare(`SELECT * FROM funds WHERE id = ?`).get(req.params.id);
+  const updated = await queryOne(`SELECT * FROM funds WHERE id = ?`, [req.params.id]);
   res.json({ fund: updated });
 });
 
 // GET /api/admin/settings
-router.get('/settings', (_req, res) => {
-  const rows = db.prepare(`SELECT key, value FROM platform_settings`).all() as any[];
+router.get('/settings', async (_req, res) => {
+  const rows = await queryMany(`SELECT key, value FROM platform_settings`) as any[];
   const settings: Record<string, any> = {};
   for (const r of rows) {
     try { settings[r.key] = JSON.parse(r.value); } catch { settings[r.key] = r.value; }
@@ -183,27 +185,36 @@ router.get('/settings', (_req, res) => {
 });
 
 // PUT /api/admin/settings
-router.put('/settings', (req, res) => {
+router.put('/settings', async (req, res) => {
   const { minDeposit, dailyWithdrawalLimit, fee, walletAddresses, bankDetails } = req.body;
 
-  const stmt = db.prepare(`INSERT OR REPLACE INTO platform_settings (key, value) VALUES (?, ?)`);
-  if (minDeposit !== undefined) stmt.run('min_deposit', String(minDeposit));
-  if (dailyWithdrawalLimit !== undefined) stmt.run('daily_withdrawal_limit', String(dailyWithdrawalLimit));
-  if (fee !== undefined) stmt.run('platform_fee', String(fee));
-  if (walletAddresses !== undefined) stmt.run('wallet_addresses', JSON.stringify(walletAddresses));
-  if (bankDetails !== undefined) stmt.run('bank_details', JSON.stringify(bankDetails));
+  if (minDeposit !== undefined) {
+    await runQuery(`INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, ['min_deposit', String(minDeposit)]);
+  }
+  if (dailyWithdrawalLimit !== undefined) {
+    await runQuery(`INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, ['daily_withdrawal_limit', String(dailyWithdrawalLimit)]);
+  }
+  if (fee !== undefined) {
+    await runQuery(`INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, ['platform_fee', String(fee)]);
+  }
+  if (walletAddresses !== undefined) {
+    await runQuery(`INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, ['wallet_addresses', JSON.stringify(walletAddresses)]);
+  }
+  if (bankDetails !== undefined) {
+    await runQuery(`INSERT INTO platform_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`, ['bank_details', JSON.stringify(bankDetails)]);
+  }
 
   res.json({ success: true });
 });
 
 // Support tickets admin endpoints
-router.get('/support-tickets', (_req, res) => {
-  const tickets = db.prepare(`
+router.get('/support-tickets', async (_req, res) => {
+  const tickets = await queryMany(`
     SELECT t.*, u.email, u.name
     FROM support_tickets t
     JOIN users u ON t.user_id = u.id
     ORDER BY CASE t.status WHEN 'open' THEN 0 WHEN 'in_progress' THEN 1 WHEN 'resolved' THEN 2 ELSE 3 END, t.created_at DESC
-  `).all() as any[];
+  `) as any[];
   res.json({ tickets: tickets.map(t => ({ id: t.id, userId: t.user_id, userEmail: t.email, userName: t.name, subject: t.subject, message: t.message, status: t.status, adminReply: t.admin_reply, createdAt: t.created_at, updatedAt: t.updated_at })) });
 });
 
@@ -212,11 +223,11 @@ const ticketReplySchema = z.object({
   reply: z.string().optional(),
 });
 
-router.post('/support-tickets/:id/reply', validate(ticketReplySchema), (req, res) => {
+router.post('/support-tickets/:id/reply', validate(ticketReplySchema), async (req, res) => {
   const ticketId = Number(req.params.id);
   const { status, reply } = req.body;
-  db.prepare(`UPDATE support_tickets SET status = ?, admin_reply = COALESCE(?, admin_reply), updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(status, reply || null, ticketId);
-  const ticket = db.prepare(`SELECT * FROM support_tickets WHERE id = ?`).get(ticketId) as any;
+  await runQuery(`UPDATE support_tickets SET status = ?, admin_reply = COALESCE(?, admin_reply), updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [status, reply || null, ticketId]);
+  const ticket = await queryOne(`SELECT * FROM support_tickets WHERE id = ?`, [ticketId]) as any;
   res.json({ ticket: { id: ticket.id, subject: ticket.subject, status: ticket.status, adminReply: ticket.admin_reply, updatedAt: ticket.updated_at } });
 });
 
